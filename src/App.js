@@ -8,7 +8,9 @@ const phases = [
 ];
 
 function getTodayKey() {
-  return new Date().toLocaleDateString("en-CA", { timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone });
+  return new Date().toLocaleDateString("en-CA", {
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  });
 }
 
 function updateLocalStorage(minutes) {
@@ -18,21 +20,13 @@ function updateLocalStorage(minutes) {
   localStorage.setItem("breathingHistory", JSON.stringify(data));
 }
 
-function fadeOutAudio(audioRef, duration = 1000) {
-  const audio = audioRef.current;
-  const step = 0.05;
-  const fadeInterval = duration / (1 / step);
-
-  const fade = setInterval(() => {
-    if (audio.volume > step) {
-      audio.volume -= step;
-    } else {
-      audio.volume = 1;
-      audio.pause();
-      audio.currentTime = 0;
-      clearInterval(fade);
-    }
-  }, fadeInterval);
+function preloadAudio(audioRefs) {
+  audioRefs.forEach((ref) => {
+    const audio = ref.current;
+    audio.play().catch(() => {});
+    audio.pause();
+    audio.currentTime = 0;
+  });
 }
 
 export default function BreathingApp() {
@@ -51,7 +45,7 @@ export default function BreathingApp() {
   const finishAudio = useRef(new Audio("/finish.mp3"));
 
   const stopAllSounds = () => {
-    [inhaleAudio, holdAudio, exhaleAudio, finishAudio].forEach(ref => {
+    [inhaleAudio, holdAudio, exhaleAudio, finishAudio].forEach((ref) => {
       const audio = ref.current;
       audio.pause();
       audio.currentTime = 0;
@@ -94,7 +88,9 @@ export default function BreathingApp() {
                   stopAllSounds();
                   finishAudio.current.currentTime = 0;
                   finishAudio.current.volume = 1;
-                  finishAudio.current.play().catch((e) => console.warn("Finish audio play interrupted:", e));
+                  finishAudio.current.play().catch((e) =>
+                    console.warn("Finish audio play interrupted:", e)
+                  );
                 }
                 return nextElapsed;
               });
@@ -114,6 +110,7 @@ export default function BreathingApp() {
   }, [isRunning, meditationTime, sessionComplete]);
 
   const startMeditation = () => {
+    preloadAudio([inhaleAudio, holdAudio, exhaleAudio, finishAudio]);
     stopAllSounds();
     setElapsed(0);
     setPhaseIndex(0);
@@ -137,7 +134,6 @@ export default function BreathingApp() {
   const todayKey = getTodayKey();
   const history = JSON.parse(localStorage.getItem("breathingHistory") || "{}");
   const todayMinutes = history[todayKey] || 0;
-
   const timeRemaining = Math.max(meditationTime * 60 - elapsed, 0);
 
   return (
@@ -157,7 +153,9 @@ export default function BreathingApp() {
       </div>
 
       {!isRunning && !sessionStarted && (
-        <button className="button start" onClick={startMeditation}>Start</button>
+        <button className="button start" onClick={startMeditation}>
+          Start
+        </button>
       )}
 
       {sessionStarted && !sessionComplete && (
@@ -165,7 +163,8 @@ export default function BreathingApp() {
           <p className="phase-name">{phases[phaseIndex].name}</p>
           <p className="phase-timer">{phaseTimeLeft}s</p>
           <p className="time-remaining">
-            Time remaining: {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, "0")}
+            Time remaining: {Math.floor(timeRemaining / 60)}:
+            {(timeRemaining % 60).toString().padStart(2, "0")}
           </p>
           <button className="button pause" onClick={togglePause}>
             {isRunning ? "Pause" : "Resume"}
@@ -176,7 +175,9 @@ export default function BreathingApp() {
       {sessionComplete && (
         <div className="session-complete">
           <p className="complete-text">Session complete. 🧘</p>
-          <button className="button start" onClick={startMeditation}>Start Another Session</button>
+          <button className="button start" onClick={startMeditation}>
+            Start Another Session
+          </button>
         </div>
       )}
     </div>
